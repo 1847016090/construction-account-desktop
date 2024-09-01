@@ -1,9 +1,10 @@
+import Material from '@/manage/material';
+import Person from '@/manage/person';
 import { DesktopOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { Breadcrumb, Layout, Menu, theme } from 'antd';
 import React, { useState } from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import Material from './manage/material';
+import { Route, RouteProps, Routes, useNavigate } from 'react-router-dom';
 const { Header, Content, Footer, Sider } = Layout;
 type MenuItem = Required<MenuProps>['items'][number];
 
@@ -11,44 +12,67 @@ type MItem = MenuItem &
   RouteItem & {
     path?: string;
     label?: string;
+    children?: MItem[];
   };
 
 const items: MItem[] = [
   {
     label: '首页',
-    key: 'home',
+    key: '/',
     icon: <DesktopOutlined />,
-    path: '/',
-    element: <Material />,
+    element: <Person />,
   },
   {
-    label: '材料管理',
-    key: 'material',
+    label: '配置',
+    key: '/setting',
     icon: <DesktopOutlined />,
-    path: '/manage/material',
     element: <Material />,
+    children: [
+      {
+        label: '人员管理',
+        key: '/setting/person',
+        element: <Person />,
+      },
+      {
+        label: '材料管理',
+        key: '/setting/material',
+        element: <Material />,
+      },
+    ],
   },
 ];
 type RouteItem = {
   name?: string;
   element?: React.ReactElement;
+  path?: string;
 };
 
-const routes: RouteItem[] = items.map((i: MItem) => ({
-  name: i.label,
-  path: i.path,
-  element: i.element,
-}));
+const flatRoute = (routeList: MItem[]) => {
+  const routes: RouteProps[] = [];
+  const deep = (items: MItem[]) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    items.forEach((route: any) => {
+      const { children, key, ...rest } = route;
+      if (children) {
+        deep(children);
+      }
+      routes.push({ ...rest, path: key });
+    });
+  };
 
-const router = createBrowserRouter(routes);
+  deep(routeList);
+
+  return routes;
+};
+
+const routes: RouteProps[] = flatRoute(items);
 
 const App: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
-  console.log('Material', Material);
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -66,7 +90,10 @@ const App: React.FC = () => {
           defaultSelectedKeys={['1']}
           mode="inline"
           items={items}
-          // onClick={() => navigate('/manage/material')}
+          onClick={(info) => {
+            console.log('info');
+            navigate(info.key);
+          }}
         />
       </Sider>
       <Layout>
@@ -84,7 +111,11 @@ const App: React.FC = () => {
               borderRadius: borderRadiusLG,
             }}
           >
-            <RouterProvider router={router} />
+            <Routes>
+              {routes.map((route, index) => (
+                <Route path={route.path} element={route.element} key={index} />
+              ))}
+            </Routes>
           </div>
         </Content>
         <Footer style={{ textAlign: 'center' }}>

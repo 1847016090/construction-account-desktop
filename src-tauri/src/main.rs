@@ -10,5 +10,7 @@ fn main() {
 
 #[tauri::command]
 fn greet(name: &str) -> String {
+    println!("xxxxxx");
+    print!("===={}====", name);
     format!("Hello, {}!", name)
 }
